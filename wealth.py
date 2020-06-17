@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# parameters
+# global variables 
 total_pop = 1000
 beta = 1
 omega = 1
@@ -43,15 +43,14 @@ def plot_wealth(pop):
 
 def initial_distribution(type):
 
-    # pop = np.empty(total_pop, dtype=object)
-    #
-    # if init_distribution == 'uniform':
-    #     for i in range(len(pop)):
-    #         pop[i] = initial_worth/total_pop
-    #
-    #
-    # if int_dis == 'exponential':
-    #
+    # TODO : initialisation of other distributions such as exponential or pareto
+
+    # if type == 'exponential':
+
+    # if type == 'pareto':
+
+    # if type == 'powerlaw':
+
     if type == 'uniform':
 
         return np.random.uniform(0,100)
@@ -73,25 +72,20 @@ def wealth_power(wealth, beta):
 
 
 # create population
-
 pop = np.empty(total_pop, dtype=object)
-for i  in range(len(pop)):
+for i in range(len(pop)):
     pop[i] = initial_distribution('uniform')
 
 
 # calulate iterations
-
 max_iter = np.sum(pop) *(np.exp(market_growth_rate*time_period ) -1 )/delta_omega
 
-print(max_iter)
-
-plot_wealth(pop)
 
 # simulation
 for iter in range(int(max_iter)):
 
-    if iter%10000 == 0:
-        print(iter)
+    # if iter%10000 == 0:
+    #     #     print(iter)
     chances =  wealth_power(pop, beta)
 
 
