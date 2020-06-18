@@ -1,21 +1,50 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# global variables 
-total_pop = 1000
-beta = 1
-omega = 1
+# global variables
+total_pop = 100
+beta = 2
 market_growth_rate = 0.02588
 delta_omega = 0.01
-time_period = 5
+time_period = 50
 
 
-def plot_wealth(pop):
+def plot_lorenz(pop, color):
+
+    pop_2 = pop.copy()
+    pop_2.sort()
+    final_wealth = sum(pop_2)
+
+    cumulative_wealth = [] # cumulative wealth as a percentage of total wealth
+
+    for i in range(100):
+        cumulative_wealth.append(((sum(pop_2[:int(i/100 * len(pop))]))/final_wealth)*100)
+
+    x = np.linspace(0,100,100)
+
+    plt.plot(x, cumulative_wealth, color = color)
+    plt.plot(x,x, color = 'b')
+
+    plt.text(2, 7, 'equality line',
+             rotation=45,
+             horizontalalignment='center',
+             verticalalignment='center',
+             multialignment='center')
+
+
+    plt.xlabel(' % percentile of population')
+    plt.ylabel('cumulatative wealth as a percentage')
+    plt.title('lorenz curve')
+
+    plt.show()
+
+def plot_wealth(pop, color):
 
     pop_2 = pop.copy()
     pop_2.sort()
     total_sum = max(pop_2)
     # ind_list = np.empty()
+
 
     b20 = sum(pop_2[:int(.2 * len(pop))])
     b40 = sum(pop_2[:int(.4 * len(pop))])
@@ -27,45 +56,54 @@ def plot_wealth(pop):
     #     ind = len(np.where(pop_2 < percentile * total_sum))
     #     np.append(ind_list, ind)
 
-    plt.scatter(20, b20)
-    plt.scatter(40,b40)
-    plt.scatter(60, b60)
-    plt.scatter(80,b80)
-    plt.scatter(95, b95)
+    plt.scatter(20, b20, c = color)
+    plt.scatter(40,b40, c = color)
+    plt.scatter(60, b60, c = color)
+    plt.scatter(80,b80, c = color)
+    plt.scatter(95, b95, c = color)
+    plt.plot([20,40,60,80, 95], [b20, b40, b60, b80, b95], color = color)
 
     plt.yscale('log')
+    plt.xscale('log')
     plt.xlabel('percentile')
     plt.ylabel('log_wealth')
+
+
     plt.show()
-
-
 
 
 def initial_distribution(type):
 
     # TODO : initialisation of other distributions such as exponential or pareto
+    # TODO : make realistic input distribition based on real data
 
-    # if type == 'exponential':
+    if type == 'exponential':
+        return np.random.exponential(50, 10)
 
-    # if type == 'pareto':
+    if type == 'powerlaw':
+        return np.random.pareto(.5)
 
-    # if type == 'powerlaw':
+    if type == 'pareto':
+        return np.random.pareto(.5)
 
     if type == 'uniform':
-
-        return np.random.uniform(0,100)
-
+        return np.random.uniform(25,75)
 
 
-# class of person
+def calc_gini(individual_worths):
+    temp = 0.0
 
-# class Person:
-#     def __init__(self, id):
-#         self.id = id
-#         self.wealth = initial_distribution('uniform')
+    s_individual_worths = sorted(individual_worths)
+    n = len(individual_worths)
+    for i in range(n):
+        temp += i * s_individual_worths[i]
 
+    temp *= 2
+
+    return temp / (n * sum(individual_worths)) - (n + 1) / n
 
 # wealth distribution
+
 def wealth_power(wealth, beta):
     return np.power(wealth, beta)
 
@@ -78,18 +116,23 @@ for i in range(len(pop)):
 
 
 # calulate iterations
-max_iter = np.sum(pop) *(np.exp(market_growth_rate*time_period ) -1 )/delta_omega
+max_iter = np.sum(pop) * (np.exp(market_growth_rate* time_period ) -1)/delta_omega
 
+# plot begin wealth
+
+# plot_wealth(pop, color = 'b')
+plot_lorenz(pop, color = 'r')
 
 # simulation
+chances = wealth_power(pop, beta)
+check = int(max_iter/10)
+sum_chances = sum(chances)
+
 for iter in range(int(max_iter)):
+    if iter % check == 0:
+        print(10*iter/max_iter)
 
-    # if iter%10000 == 0:
-    #     #     print(iter)
-    chances =  wealth_power(pop, beta)
-
-
-    decision = np.random.uniform(0,sum(chances))
+    decision = np.random.uniform(0,sum_chances)
     decision_pos, chance_sum = 0, pop[0]
 
     # print(decision, sum(chances))
@@ -99,10 +142,19 @@ for iter in range(int(max_iter)):
         chance_sum += chances[decision_pos]
 
     pop[decision_pos] += delta_omega
+    new_wealth = wealth_power(pop[decision_pos], beta)
+    sum_chances += new_wealth - chances[decision_pos]
+    chances[decision_pos] = new_wealth
 
 
-plot_wealth(pop)
+# plot_wealth(pop, color = 'b')
+plot_lorenz(pop, color = 'r')
 
 
+# save results of the simulation
+np.save('results_wealth', pop)
 
+# Gini coeffecient
+# Fit input distributions to data
+# Look for a phase transition
 
