@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # global variables
-total_pop = 100
-beta = 2
-market_growth_rate = 0.02588
+total_pop = 1000
+beta_array = np.linspace(0.1,3,30)
+market_growth_rate = 0.02
 delta_omega = 0.01
 time_period = 50
 
@@ -17,10 +17,10 @@ def plot_lorenz(pop, color):
 
     cumulative_wealth = [] # cumulative wealth as a percentage of total wealth
 
-    for i in range(100):
+    for i in range(101):
         cumulative_wealth.append(((sum(pop_2[:int(i/100 * len(pop))]))/final_wealth)*100)
 
-    x = np.linspace(0,100,100)
+    x = np.linspace(0,100,101)
 
     plt.plot(x, cumulative_wealth, color = color)
     plt.plot(x,x, color = 'b')
@@ -90,17 +90,21 @@ def initial_distribution(type):
         return np.random.uniform(25,75)
 
 
-def calc_gini(individual_worths):
-    temp = 0.0
+def calc_gini(population):
 
-    s_individual_worths = sorted(individual_worths)
-    n = len(individual_worths)
+
+    pop_gini = population
+    sorted_pop = sorted(pop_gini)
+    n = len(sorted_pop)
+    temp_sum = 0.0
+
     for i in range(n):
-        temp += i * s_individual_worths[i]
+        temp_sum += i * sorted_pop[i]
 
-    temp *= 2
+    temp_sum *= 2
 
-    return temp / (n * sum(individual_worths)) - (n + 1) / n
+    gini_coef = (temp_sum/ (n * sum(sorted_pop))) - ((n + 1) / n)
+    return gini_coef
 
 # wealth distribution
 
@@ -115,46 +119,91 @@ for i in range(len(pop)):
     pop[i] = initial_distribution('uniform')
 
 
+results_dict = {}
+gini_list = []
+
+
+for beta in beta_array:
+    print('new round')
+
+
 # calulate iterations
-max_iter = np.sum(pop) * (np.exp(market_growth_rate* time_period ) -1)/delta_omega
+    max_iter = np.sum(pop) * (np.exp(market_growth_rate* time_period ) -1)/delta_omega
 
-# plot begin wealth
+    # plot begin wealth
+
+    # plot_wealth(pop, color = 'b')
+    # plot_lorenz(pop, color = 'r')
+
+    # simulation
+    chances = wealth_power(pop, beta)
+    check = int(max_iter/10)
+    sum_chances = sum(chances)
+
+    for iter in range(int(max_iter)):
+
+        if iter % check == 0:
+            print(10*iter/max_iter)
+
+        decision = np.random.uniform(0,sum_chances)
+        decision_pos, chance_sum = 0, chances[0]
+
+        # print(decision, sum(chances))
+
+        while decision > chance_sum and decision_pos < total_pop - 1:
+            decision_pos += 1
+            chance_sum += chances[decision_pos]
+
+        pop[decision_pos] += delta_omega
+        new_wealth = wealth_power(pop[decision_pos], beta)
+        sum_chances += new_wealth - chances[decision_pos]
+        chances[decision_pos] = new_wealth
+
 
 # plot_wealth(pop, color = 'b')
-plot_lorenz(pop, color = 'r')
+# plot_lorenz(pop, color = 'r')
 
-# simulation
-chances = wealth_power(pop, beta)
-check = int(max_iter/10)
-sum_chances = sum(chances)
-
-for iter in range(int(max_iter)):
-    if iter % check == 0:
-        print(10*iter/max_iter)
-
-    decision = np.random.uniform(0,sum_chances)
-    decision_pos, chance_sum = 0, pop[0]
-
-    # print(decision, sum(chances))
-
-    while decision > chance_sum and decision_pos < total_pop - 1:
-        decision_pos += 1
-        chance_sum += chances[decision_pos]
-
-    pop[decision_pos] += delta_omega
-    new_wealth = wealth_power(pop[decision_pos], beta)
-    sum_chances += new_wealth - chances[decision_pos]
-    chances[decision_pos] = new_wealth
+# calculate gini coefficient and make an array, gini = 0 is perfect equality, gini == 1 is perfect inequality
+#     gini_coef_ = np.empty(1)
+#     gini_coef_[0] = calc_gini(pop)
 
 
-# plot_wealth(pop, color = 'b')
-plot_lorenz(pop, color = 'r')
+    results_dict[beta] = pop
+    gini_list.append(calc_gini(pop))
+
+df = pd.DataFrame(results_dict)
+print(gini_list)
+df.to_pickle("./results_test_1.pkl")
+
+# dict = {}
+# for i in range(0,10):
+#     array = np.random.randint(1,101,5)
+#     dict[i] = array
+
+# df = pd.DataFrame(dict)
+#
+# col_1 = df.iloc[:, 4]
+# df.to_pickle("./testpickle_2.pkl")
+# lala = pd.read_pickle("./testpickle_2.pkl")
+#
+# print(lala)
 
 
 # save results of the simulation
-np.save('results_wealth', pop)
 
-# Gini coeffecient
-# Fit input distributions to data
-# Look for a phase transition
+
+
+
+
+
+
+# for the model, fix time market growth and pop to reasonable amounts (do tests), does the model work?
+# run for 10 beta's, 10 lorenz curves and 10 gini's (enough to see a phase transition)
+
+# hoelang duurt voor t = 50 met 10000 pop, 17:56 start,18.02 (20%), 18.05(30)% ca 30 minuten per run, dus als je snachts laat runnen ong 20 runs possible
+
+
+# next, plot the final gini coeffecient against the beta, and maybe plot a few lorenz curves (the 4 most extremes)
+
+
 
