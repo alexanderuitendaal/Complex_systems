@@ -1,3 +1,4 @@
+
 import networkx as nx
 import numpy as np
 from matplotlib import pyplot as plt
@@ -58,6 +59,7 @@ def simulation():
     # DO FIRST ITERATION EXPLICIT
     pop.add_node(0, wealth=0, ability=np.random.beta(beta1, beta2))
     current_persons = np.append(current_persons, 0)
+    # print(pop.nodes[0]['wealth'])
     wealths = np.append(wealths, pop.nodes[0]['wealth'])
 
     # RUN MODEL FOR GIVEN POPULATION SIZE
@@ -83,10 +85,16 @@ def simulation():
             pop.nodes[node]['wealth'] += wealth_produced
 
             # local redistribution
-            for neighbor in pop.neighbors(node):
-                neighbor = int(neighbor)
-                wealths[neighbor] += gamma*wealth_produced
-                pop.nodes[neighbor]['wealth'] += gamma*wealth_produced
+            if len(list(pop.neighbors(node))) > 0:
+
+                portion = gamma/len(list(pop.neighbors(node)))
+                wealths[node] -= gamma * wealth_produced
+                pop.nodes[node]['wealth'] -= gamma * wealth_produced
+
+                for neighbor in pop.neighbors(node):
+                    neighbor = int(neighbor)
+                    wealths[neighbor] += portion * wealth_produced
+                    pop.nodes[neighbor]['wealth'] += portion * wealth_produced
 
     return pop, wealths
 
@@ -106,3 +114,4 @@ for simu in range(simulations):
 plot_wealth_and_degree(all_degrees, all_wealths)
 # np.save("wealths1", wealths)
 # nx.write_edgelist(pop, "network1.edgelist")
+
