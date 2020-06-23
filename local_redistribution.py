@@ -3,7 +3,8 @@ import networkx as nx
 import numpy as np
 from matplotlib import pyplot as plt
 import datetime
-simulations = 50
+import pandas as pd
+simulations = 100
 
 '''
 ##################
@@ -12,7 +13,7 @@ simulations = 50
 '''
 def plot_wealth_and_degree(all_degrees, all_wealths):
     points = 100
-    checking_wealths = np.logspace(-1, 4,points)
+    checking_wealths = np.logspace(-4, 0,points)
     observed_wealths = np.zeros(points)
     len_wealth = len(all_wealths)
 
@@ -104,14 +105,52 @@ def simulation():
 ##################
 '''
 all_wealths, all_degrees = np.array([]), np.array([])
+
 for simu in range(simulations):
     print(simu)
     pop, wealths = simulation()
+    wealths =  np.sort(wealths)
+    wealths = wealths/max(wealths)
 
     all_wealths = np.append(all_wealths, wealths)
     all_degrees = np.append(all_degrees, np.array(pop.degree)[:,1])
 
-plot_wealth_and_degree(all_degrees, all_wealths)
-# np.save("wealths1", wealths)
-# nx.write_edgelist(pop, "network1.edgelist")
+averages, deviations = np.array([]), np.array([])
+pop_size = int(len(all_wealths)/simulations)
 
+for j in range(pop_size):
+    jth_poorest = all_wealths[j:pop_size+j+1:pop_size]
+
+    averages = np.append(averages, np.average(jth_poorest))
+    deviations = np.append(deviations, np.std(jth_poorest))
+
+average_wealth_and_dev = np.array([averages,deviations])
+
+'''
+SAVES THE WANTED ARRAY
+'''
+np.save('wealth_averages_and_deviations',average_wealth_and_dev)
+print(average_wealth_and_dev)
+
+def degree_wealth_plot(nw):
+    wealth = np.array(list(zip(*list(nw.nodes(data='wealth'))))[1])
+    degree = np.array(list(zip(*list(nw.degree())))[1])
+    df = pd.DataFrame([wealth, degree]).T
+    df.columns =['Wealth', 'Degree']
+    avg = df.groupby('Degree').mean()
+    plt.plot(avg)
+    plt.xlabel('Degree')
+    plt.ylabel('Average Wealth')
+    plt.show()
+
+'''
+TURN THIS ON TO SEE PLOTS
+'''
+# plot_wealth_and_degree(all_degrees, all_wealths)
+# degree_wealth_plot(pop)
+
+
+'''
+TURN THIS ON IF YOU WANT TO SAVE THE ARRAY
+'''
+# np.save("wealths1", wealths)
